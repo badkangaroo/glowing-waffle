@@ -1,0 +1,17 @@
+{
+  "name": "glowing-waffle",
+  "version": "1.0.0",
+  "description": "Shared repo for trying out some things in git.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "phaser": "^3.90.0"
+  }
+}
