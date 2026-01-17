@@ -60,14 +60,35 @@ function create() {
     this.physics.add.existing(player);
     player.body.setCollideWorldBounds(true);
 
-    // Create bullets group
+    // Create bullets group with pooling
     bullets = this.physics.add.group({
-        defaultKey: 'bullet',
-        maxSize: 20
+        maxSize: 30,
+        runChildUpdate: false
     });
 
-    // Create enemies group
-    enemies = this.physics.add.group();
+    // Pre-create bullet pool (create 30 bullets upfront, all inactive)
+    for (let i = 0; i < 30; i++) {
+        const bullet = this.add.rectangle(0, 0, 6, 15, 0xffff00);
+        this.physics.add.existing(bullet);
+        bullet.body.setEnable(false);
+        bullet.setActive(false).setVisible(false);
+        bullets.add(bullet);
+    }
+
+    // Create enemies group with pooling
+    enemies = this.physics.add.group({
+        maxSize: 50,
+        runChildUpdate: false
+    });
+
+    // Pre-create enemy pool (create 50 enemies upfront, all inactive)
+    for (let i = 0; i < 50; i++) {
+        const enemy = this.add.rectangle(0, 0, 40, 40, 0xff0000);
+        this.physics.add.existing(enemy);
+        enemy.body.setEnable(false);
+        enemy.setActive(false).setVisible(false);
+        enemies.add(enemy);
+    }
 
     // Set up controls
     cursors = this.input.keyboard.createCursorKeys();
@@ -149,39 +170,70 @@ function update(time, delta) {
         lastEnemySpawn = time;
     }
 
-    // Update bullets
+    // Update bullets (deactivate when off-screen instead of destroying)
     bullets.children.entries.forEach(bullet => {
         if (bullet.active && bullet.y < 0) {
-            bullet.destroy();
+            bullet.body.setEnable(false);
+            bullet.setActive(false).setVisible(false);
         }
     });
 
-    // Update enemies
+    // Update enemies (deactivate when off-screen instead of destroying)
     enemies.children.entries.forEach(enemy => {
         if (enemy.active && enemy.y > 600) {
-            enemy.destroy();
+            enemy.body.setEnable(false);
+            enemy.setActive(false).setVisible(false);
         }
     });
 }
 
 function shootBullet(scene) {
-    const bullet = scene.add.rectangle(player.x, player.y - 20, 6, 15, 0xffff00);
-    scene.physics.add.existing(bullet);
+    // Get a dead bullet from the pool, or create a new one if pool is exhausted
+    let bullet = bullets.getFirstDead();
+    
+    if (!bullet) {
+        // Pool exhausted, create a new one (shouldn't happen often with pre-created pool)
+        bullet = scene.add.rectangle(0, 0, 6, 15, 0xffff00);
+        scene.physics.add.existing(bullet);
+        bullets.add(bullet);
+    }
+    
+    // Revive and configure the bullet
+    bullet.setActive(true).setVisible(true);
+    bullet.x = player.x;
+    bullet.y = player.y - 20;
+    bullet.body.setEnable(true);
     bullet.body.setVelocityY(-400);
-    bullets.add(bullet);
 }
 
 function spawnEnemy(scene) {
+    // Get a dead enemy from the pool, or create a new one if pool is exhausted
+    let enemy = enemies.getFirstDead();
+    
+    if (!enemy) {
+        // Pool exhausted, create a new one (shouldn't happen often with pre-created pool)
+        enemy = scene.add.rectangle(0, 0, 40, 40, 0xff0000);
+        scene.physics.add.existing(enemy);
+        enemies.add(enemy);
+    }
+    
+    // Revive and configure the enemy
     const x = Phaser.Math.Between(20, 780);
-    const enemy = scene.add.rectangle(x, 0, 40, 40, 0xff0000);
-    scene.physics.add.existing(enemy);
+    enemy.setActive(true).setVisible(true);
+    enemy.x = x;
+    enemy.y = 0;
+    enemy.body.setEnable(true);
     enemy.body.setVelocityY(Phaser.Math.Between(100, 200));
-    enemies.add(enemy);
 }
 
 function hitEnemy(bullet, enemy) {
-    bullet.destroy();
-    enemy.destroy();
+    // Return objects to pool instead of destroying them
+    bullet.body.setEnable(false);
+    bullet.setActive(false).setVisible(false);
+    
+    enemy.body.setEnable(false);
+    enemy.setActive(false).setVisible(false);
+    
     score += 10;
     scoreText.setText('Score: ' + score);
 }
