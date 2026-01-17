@@ -31,12 +31,16 @@ let gameOver = false;
 let lastEnemySpawn = 0;
 let stars;
 let wasdKeys;
+let gameOverText;
+let currentScene;
 
 function preload() {
     // Since we don't have assets, we'll create graphics dynamically
 }
 
 function create() {
+    currentScene = this;
+    
     // Create a starfield background
     stars = this.add.group();
     for (let i = 0; i < 50; i++) {
@@ -86,13 +90,13 @@ function create() {
     this.physics.add.overlap(player, enemies, hitPlayer, null, this);
 
     // Game over text (hidden initially)
-    this.gameOverText = this.add.text(400, 300, 'GAME OVER\nPress R to Restart', {
+    gameOverText = this.add.text(400, 300, 'GAME OVER\nPress R to Restart', {
         fontSize: '48px',
         fill: '#ff0000',
         align: 'center'
     });
-    this.gameOverText.setOrigin(0.5);
-    this.gameOverText.setVisible(false);
+    gameOverText.setOrigin(0.5);
+    gameOverText.setVisible(false);
 
     // Restart key
     this.input.keyboard.on('keydown-R', () => {
@@ -184,6 +188,6 @@ function hitEnemy(bullet, enemy) {
 
 function hitPlayer(player, enemy) {
     gameOver = true;
-    this.gameOverText.setVisible(true);
-    this.physics.pause();
+    gameOverText.setVisible(true);
+    currentScene.physics.pause();
 }
